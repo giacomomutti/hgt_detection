@@ -1,21 +1,7 @@
 import json
 
-# DEPENDENCIES
-
-# blast suite
-# taxonkit 
-# hgtector
-# tidyverse R package
-
 configfile: "data/configs/HGT_config.yml"
 
-# DEPENDENCIES
-
-# blast suite
-# mafft
-# trimal
-# fasttree
-# ggtree, ggtreeExtra, tidyverse R packages
 
 proteome=config["proteome"]
 blast=config["blast"]
@@ -24,9 +10,8 @@ foldseek_db=config["foldseek_db"]
 # self_db=config["self_db"]
 kingdom=config["kingdom"]
 taxdump=config["taxdump"]
+
 # lineage=config["lineage"] # this is if one day we want to do it at a finer scale
-# name=config["name"]
-# seed_id=config["seed_id"]
 
 # SAMPLES WITH TAXID 
 samples = json.load(open(config["samples"]))
@@ -63,20 +48,10 @@ for sp, seed_file in samples.items():
 
     id_file = output+f"{sp}/ids/{sp}_all.txt"
     outfiles.append(id_file)
-    
-    # trees_directory = output+f"{sp}/rooted_tree/{sp}_rooted_hgt.nwk"
-    # outfiles.append(trees_directory)
-    
-    # this should be optional as some proteomes are not in uniprot and do not have pdbs
-    outfiles.append(output+f"{sp}/pdbs")
-    outfiles.append(output+f"{sp}/hgt_trees/{sp}_trees.nwk")
-    # hit_genes = checkpoints.concatenate_ids.get(sp=sp).output.all_ids
 
-    # with open(hit_genes) as input:
-    #     seeds=input.read().splitlines()
-    #     for seed in seeds:
-    #         outfiles.append(output+f"{sp}/tree_plots/")#{seed}.png")
-    #         outfiles.append(output+f"{sp}/rooted_tree/")#rooted_{seed}.nwk")
+    # this should be optional as some proteomes are not in uniprot and do not have pdbs
+    # outfiles.append(output+f"{sp}/pdbs")
+    outfiles.append(output+f"{sp}/hgt_trees/{sp}_trees.nwk")
 
 
 def get_trees(wildcards):
@@ -93,33 +68,25 @@ def get_tree_plots(wildcards):
     return expand(output+"{sp}/tree_plots/{i}.png", sp=wildcards.sp, i=seeds)
 
 
-rule all:
+rule hgt_hits:
     input:
         outfiles
 
+
 # Selfblast to compute self bitscore and eventually use it to define gene families
+# with diamond the e-values were different from blast!
 rule selfblast:
     input:
         proteome+"{sp}.fa"
     output:
         output+"{sp}/selfblast/{sp}_self.blast",
-    threads: 3
-    params:
-        selfdb="data/selfblast_db/{sp}"
-    # conda:
-    #     "homology"
+    threads: 4
     shell:
         """
-makeblastdb -parse_seqids -dbtype prot -in {input} -out {params.selfdb}
-blastp -query {input} -db {params.selfdb} -evalue 1e-10 \
+makeblastdb -parse_seqids -dbtype prot -in {input}
+blastp -query {input} -db {input} -evalue 1e-10 \
 -outfmt "6 std qcovs qcovhsp qlen slen staxids" -num_threads {threads} > {output}
 """
-# diamond makedb --in {input} -d {params.selfdb}
-# diamond blastp -d {params.selfdb} -q {input} \
-# --evalue 1e-10 --outfmt 6 \
-# qseqid sseqid pident length mismatch gapopen qstart qend \
-# sstart send evalue bitscore qcovhsp qlen slen \
-# -o {output}
 
 # get taxonomy to annotate blast results
 rule get_taxonomy:
@@ -128,13 +95,13 @@ rule get_taxonomy:
     output:
         output+"{sp}/taxonomy/{sp}_tax.txt"
     params:
-        tdump=taxdump+"/{sp}/taxdump"
+        taxdump=taxdump+"/{sp}/taxdump"
     # conda:
     #     "data"
     shell:
         """
 cut -f2 {input} | cut -f1 -d\'_\' | sort | uniq | \
-taxonkit reformat --data-dir {params.tdump} -I1  \
+taxonkit reformat --data-dir {params.taxdump} -I1  \
 -f \'{{k}}\\t{{p}}\\t{{c}}\\t{{o}}\\t{{f}}\\t{{g}}\\t{{s}}\' > {output}
 """
 
@@ -147,7 +114,6 @@ rule parse_blast:
         selfblast=output+"{sp}/selfblast/{sp}_self.blast"
     output:
         output+"{sp}/blast/{sp}_filtered.blast"
-        # blast="output/blast/"+name+"_parsed.blast"
     params:
         seed_id=lambda wcs: samples[wcs.sp][0]
     shell:
@@ -156,6 +122,7 @@ Rscript ./scripts/parse_blast.R -i {input.blast} -t {input.tax}\
  -e {evalue} -c {min_cov} -l {len_ratio}\
  -s {params.seed_id} -a {input.selfblast} -o {output}
 """
+
 
 # Compute alien indexes
 rule compute_HGT_index:
@@ -167,7 +134,7 @@ rule compute_HGT_index:
         "Rscript ./scripts/compute_HGT_index.R -i {input} -k {kingdom} -o {output}"
 
 
-# run hgtector
+# Run hgtector
 rule HGTector2:
     input:
         prot=proteome+"{sp}.fa",
@@ -251,25 +218,9 @@ foldseek easy-search {output.pdbs} {foldseek_db} {output.foldseek_tmp} {resource
 
 cat {output.foldseek_tmp} | taxonkit reformat -I 15 -f \'{{k}}\t{{p}}\t{{c}}\t{{o}}\t{{f}}\t{{g}}\t{{s}}\' > {output.foldseek_out}
 
-
 foldseek easy-search {output.pdbs} {foldseek_db} {output.foldseek_html} {resources.tmpdir} --threads {threads}\
  --format-mode 3
 """
-
-
-# rule concatenate_ids:
-#     input:
-#         output+"{sp}/ids/{sp}_all.txt"
-#     output:
-#         directory(output+"{sp}/dummy/")
-#     shell:
-#         """
-# mkdir {output}
-# for gene in $(cat {input}); do
-#     touch {output}${{gene}}_dummy.txt; 
-# done
-# """
-
 
 rule get_inparalogs:
     input:
@@ -460,47 +411,3 @@ rule summarize_results:
         temp(output+"{sp}/hgt_trees/{sp}_trees.nwk")
     shell:
         "cat {input.trees} {input.plots} > {output}"
-
-
-# TODO
-# taxonkit list --ids 818 --data-dir ../../mgil/dbs/broaddb_v2/taxonomy/taxdump/ --show-name --show-rank
-
-# matreex plots?
-
-# foldseek search?
-
-# add QC plots
-
-# option to define "close" outgroup and compute other indexes
-
-# identify potential donors from blast results (recurring weird taxons)
-
-# one day 3 modalities
-# --interdomain: easy mode for proka2euka lgt
-# --donors: user-defined putative donors
-# --reconcile: with small curated database and species tree run reconciliation
-
-# get df of tree with all different properties so user can filter
-
-# mark HGT tree by topological rule
-
-# when deleting hits from the same species you may remove paralogs that are not identified by proteinortho but still may be close in the tree
-
-# explore the blast result of each seed to avoid hard threshold of best n hits
-
-# reverse alignment??
-
-# annotate domains and protein functions
-# compare blast and phylogenetic distance???
-
-# maybe one strategy would be to compute big trees in a fast way then reduce taxonomic redundancy
-# and compute a more accurate tree
-
-# further, very short alignment could be ignored
-
-# phylogenetic evidence that the candidate gene is more closely related to foreign than 
-# to animal genes; genome data showing the candidate gene assembles into a contiguous stretch of DNA
-# with neighboring genes unambiguously of animal origin (this requires, of course, the availability of
-# a sequenced and assembled animal genome; the more complete the assembly, the more confident the
-# HGT identification); and gene sequence revealing metazoan-like compositional traits, including 
-# presence of introns, GC content, and codon usage.
