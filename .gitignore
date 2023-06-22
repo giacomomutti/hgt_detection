@@ -1,0 +1,9 @@
+.Rproj.user/
+.Rhistory
+.snakemake
+*.Rproj
+data/input_data
+data/toadd
+old
+test
+output_hgt

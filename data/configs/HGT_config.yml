@@ -1,0 +1,34 @@
+# input files
+proteome: "data/input_data/proteomes/"
+blast: "data/input_data/blast/"
+samples: "data/configs/hgt_samples.json"
+
+# output dir
+output: "output_hgt/"
+
+# MN4 Databases
+eggnog_db: "/gpfs/projects/bsc40/current/gmutti/DB/eggnog"
+foldseek_db: "/gpfs/projects/bsc40/current/gmutti/DB/foldseek/AF_swissprot"
+db: "/gpfs/projects/bsc40/current/mgil/dbs/broaddb_v2/blastdb/broaddb"
+
+# Taxdumps - one per input species if used with other smaller dbs!
+taxdump: "data/input_data/taxdumps"
+# self_db: "data/selfblast_db/"
+
+# blast filters
+evalue: 1e-5
+len_ratio: 5
+min_cov: 25
+inflation: 15
+
+# hgtector filters
+max_hits: 500
+
+# HGT filters
+kingdom: "Eukaryota"
+min_AI: 0
+min_AI2: 0
+min_outpct: 90
+
+# tree reconstruction params
+n_seqs: 150
