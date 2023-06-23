@@ -45,7 +45,6 @@ opt <- parse_args(opt_parser)
 
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(ComplexHeatmap))
-suppressPackageStartupMessages(library(ggtern))
 suppressPackageStartupMessages(library(patchwork))
 
 
@@ -76,7 +75,7 @@ id_plot <- ggplot(hgtec, aes(close, distal, color=label)) +
   geom_point(alpha=.5, size=1) +
   scale_color_manual(values = col_hgt) +
   guides(color = guide_legend(override.aes = list(size=5, alpha=1, pch=15))) +
-  theme_bw(base_family = "Helvetica")
+  theme_bw() # base_family = "Helvetica"
 
 scatter <- paste0(opt$outfile, "/scatter_HGT.png")
 
@@ -128,46 +127,3 @@ blast_hm <- paste0(opt$outfile, "/bitscore_tax_heatmap.pdf")
 pdf(file=blast_hm, width = 20, height = 20)
 draw(ht)
 dev.off()
-
-
-# QC ANALYSIS
-
-tern_df <- blast_results %>%
-  left_join(mode, by = c("qaccver" = "protein")) %>% 
-  group_by(qaccver, label, k) %>%
-  summarise(prop = min(n()/n_hits)) %>%
-  pivot_wider(names_from = k, values_from = prop, values_fill = 0)
-
-# prokaryote
-tern_plot <- filter(tern_df, Eukaryota<1) %>% 
-  mutate(is_hgt = label!="none") %>% 
-  ggtern::ggtern(aes(x=Bacteria, y=Eukaryota, z=Archaea, color=label)) +
-  geom_point(size=1, alpha=1) +
-  scale_color_manual(values = col_hgt) +
-  facet_grid(~is_hgt) +
-  theme_bvbw() +
-  theme_nomask()
-
-# viruses
-virus_bar <- out_blast_df %>% 
-  filter(k=="Viruses") %>%
-  ggplot(aes(y=fct_rev(fct_infreq(f)))) +
-  geom_bar(fill="lightblue", color="black") + 
-  coord_cartesian(expand = 0) + 
-  labs(y="Virus family") +
-  theme_bw()
-
-virus_point <- out_blast_df %>% 
-  filter(k=="Viruses") %>% 
-  ggplot(aes(bit_self, slen/qlen)) + 
-  geom_point() + 
-  theme_bw()
-
-virus_plot <- virus_bar + virus_point
-
-out_blast_df %>% 
-  ungroup() %>% 
-  filter(o!="Kinetoplastea") %>% 
-  slice(1, .by = qaccver) %>% 
-  group_by(k,p,c) %>% 
-  count() %>% View

@@ -48,7 +48,7 @@ for sp, seed_file in samples.items():
 
     id_file = output+f"{sp}/ids/{sp}_all.txt"
     outfiles.append(id_file)
-
+    outfiles.append(output+f"{sp}/plots")
     # this should be optional as some proteomes are not in uniprot and do not have pdbs
     # outfiles.append(output+f"{sp}/pdbs")
     outfiles.append(output+f"{sp}/hgt_trees/{sp}_trees.nwk")

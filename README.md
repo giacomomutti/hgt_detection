@@ -15,13 +15,20 @@ Insert tutorial
 * taxonkit - conda
 * blast suite - conda
 * mafft - conda
+* proteinortho - conda
+* famsa - conda
+* seqkit - conda
 * trimal - conda
 * fasttree - conda
+* FastRoot - pip
 * tidyverse R package - CRAN
+* phytools -CRAN
 * ggtree - Bioconductor
 * ggtreeExtra - Bioconductor
+* Biostrings - Bioconductor
+* ComplexHeatmap - Bioconductor
 
-You can use conda to create this environment, ideally use mamba but its not in MN:
+You can use conda to create this environment, ideally use mamba:
 
 ```
 conda create -c conda-forge -c bioconda -n hgt snakemake
@@ -32,16 +39,25 @@ conda install -c conda-forge pyyaml pandas matplotlib scikit-learn bioconda::dia
 pip install git+https://github.com/qiyunlab/HGTector.git
 
 # install other dependencies
-conda install -c bioconda mafft trimal fasttree taxonkit
+conda install -c bioconda mafft trimal fasttree taxonkit proteinortho famsa seqkit
 
 # install R if you need
 conda install -c conda-forge r-base
-conda install -c conda-forge -c bioconda r-tidyverse r-optparse bioconductor-ggtree bioconductor-ggtreeextra
+conda install -c conda-forge -c bioconda r-tidyverse r-optparse r-magic r-phytools bioconductor-ggtree bioconductor-ggtreeextra bioconductor-complexheatmap 
+bioconductor-biostrings
+
+# install fastroot
+python3 -m pip install FastRoot
+fr=$(which FastRoot.py)
+dos2unix $fr
 ```
 
 
 # TODOs
 
+* add link to deps
+* what to do if less than 2 seqs in plot_Tree?
+* more elegant way to get sequences to do the tree 
 * add QC plots
 * what to do with foldseek?
 * matreex plots?
@@ -50,6 +66,7 @@ conda install -c conda-forge -c bioconda r-tidyverse r-optparse bioconductor-ggt
 * when deleting hits from the same species you may remove paralogs that are not identified by proteinortho but still may be close in the tree
 * annotate domains and protein functions
 * maybe one strategy would be to compute big trees in a fast way then reduce taxonomic redundancy and compute a more accurate tree
+* remove fastroot dependency
 
 * option to define "close" outgroup and compute other indexes
 * identify potential donors from blast results (recurring weird taxons)

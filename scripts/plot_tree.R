@@ -50,6 +50,8 @@ tree <- read.tree(opt$input) #paste0("phylogeny/tree/",seed,".nwk")
 
 if (length(tree$tip.label) < 2){
   print("Less than 2 sequences found, exiting")
+  # this is shit but could not find a way to make snakemake understand
+  file.create(opt$outfile)
   quit(status=0)
 }
   
