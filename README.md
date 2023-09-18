@@ -55,6 +55,7 @@ dos2unix $fr
 
 # TODOs
 
+* mask proteins and then do dataframe with protein length, %masked proportion to eventually filter downstream results
 * add link to deps
 * what to do if less than 2 seqs in plot_Tree?
 * more elegant way to get sequences to do the tree 
